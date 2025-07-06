@@ -145,6 +145,34 @@
       padding: 0.5em 1em;
       align-items: center;
       opacity: 0.97;
+      transition: all 0.3s;
+    }
+    @media (max-width: 700px) {
+      .controls {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: unset;
+        width: 100vw;
+        border-radius: 0 0 16px 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 0.4em 0.2em 0.4em 0.2em;
+        background: rgba(30,30,30,0.97);
+      }
+      .paper-img.zoomed {
+        max-width: 98vw;
+        max-height: 80vh;
+        top: 54%;
+        left: 50%;
+        border-radius: 16px;
+      }
+      .tooltip {
+        bottom: 10vh;
+        font-size: 0.95rem;
+        padding: 0.4em 0.8em;
+      }
     }
     .control-btn {
       background: none;
@@ -540,7 +568,14 @@ downloadBtn.addEventListener('click', () => {
     function enterZoom() {
       img.classList.add('zoomed');
       zoomed = true;
-      zoomScale = lastZoomScale;
+      // Responsive zoom scale for mobile/desktop
+      if (isMobile()) {
+        let scale = getMobileMaxZoomScale();
+        zoomScale = Math.max(scale, 1.05);
+        lastZoomScale = zoomScale;
+      } else {
+        zoomScale = lastZoomScale;
+      }
       panX = 0;
       panY = 0;
       setTransform();
@@ -567,7 +602,6 @@ downloadBtn.addEventListener('click', () => {
       tooltip.classList.remove('visible');
       document.body.style.overflow = 'hidden';
       updateControlStates();
-      // Reload the page after exiting zoom
       setTimeout(() => { location.reload(); }, 350);
       if (zoomBar) {
         zoomBar.disabled = true;
@@ -713,15 +747,30 @@ downloadBtn.addEventListener('click', () => {
     // Reset pan/zoom on exit
     // Utility: detect mobile
     function isMobile() {
-      return window.innerWidth <= 600 || /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+      return window.innerWidth <= 700 || /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    }
+
+    // Calculate max zoom scale for mobile so image never exceeds viewport
+    function getMobileMaxZoomScale() {
+      const vw = window.innerWidth * 0.98;
+      const vh = window.innerHeight * 0.80;
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
+      if (!iw || !ih) return 1.2;
+      return Math.min(vw / iw, vh / ih);
     }
 
     img.addEventListener('dblclick', (e) => {
       if (!zoomed) {
-        // Double-click to zoom in at click point, adaptive for mobile/desktop
         img.classList.add('zoomed');
         zoomed = true;
-        let targetScale = isMobile() ? 1.4 : 2.2;
+        let targetScale;
+        if (isMobile()) {
+          targetScale = getMobileMaxZoomScale();
+          targetScale = Math.max(targetScale, 1.05);
+        } else {
+          targetScale = 2.2;
+        }
         const rect = img.getBoundingClientRect();
         const cx = e.clientX - rect.left - rect.width / 2;
         const cy = e.clientY - rect.top - rect.height / 2;
@@ -741,10 +790,15 @@ downloadBtn.addEventListener('click', () => {
 
     img.addEventListener('click', (e) => {
       if (!zoomed) {
-        // Zoom in at click point, adaptive for mobile/desktop
         img.classList.add('zoomed');
         zoomed = true;
-        let targetScale = isMobile() ? 1.2 : 1.8;
+        let targetScale;
+        if (isMobile()) {
+          targetScale = getMobileMaxZoomScale();
+          targetScale = Math.max(targetScale, 1.05);
+        } else {
+          targetScale = 1.8;
+        }
         const rect = img.getBoundingClientRect();
         const cx = e.clientX - rect.left - rect.width / 2;
         const cy = e.clientY - rect.top - rect.height / 2;
